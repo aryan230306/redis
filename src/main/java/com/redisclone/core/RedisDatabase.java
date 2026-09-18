@@ -26,7 +26,15 @@ public class RedisDatabase {
     public boolean delete(String key) {
         return dict.remove(key) != null;
     }
-    
+
+    public java.util.List<String> getAllKeys() {
+        return new java.util.ArrayList<>(dict.keySet());
+    }
+
+    public void flushAll() {
+        dict.clear();
+    }
+
     public int size() {
         return dict.size();
     }

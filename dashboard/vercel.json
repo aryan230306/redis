@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "name": "java-redis-dashboard",
+  "builds": [{ "src": "index.html", "use": "@vercel/static" }],
+  "routes": [{ "src": "/(.*)", "dest": "/index.html" }]
+}

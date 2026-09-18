@@ -1,6 +1,7 @@
 package com.redisclone.command;
 
 import com.redisclone.core.RedisDatabase;
+import com.redisclone.core.RedisObject;
 import com.redisclone.protocol.RedisCommand;
 import com.redisclone.protocol.RespEncoder;
 
@@ -302,6 +303,65 @@ public class CommandRegistry {
             com.redisclone.core.SkipList zset = (com.redisclone.core.SkipList) obj.getValue();
             java.util.List<String> result = zset.range(start, stop);
             return RespEncoder.encodeArray(result);
+        });
+
+        commands.put("EXPIRE", (db, cmd) -> {
+            if (cmd.getArgs().size() != 3) {
+                return RespEncoder.encodeError("ERR wrong number of arguments for 'expire' command");
+            }
+            String key = new String(cmd.getArgs().get(1));
+            long seconds;
+            try {
+                seconds = Long.parseLong(new String(cmd.getArgs().get(2)));
+            } catch (NumberFormatException e) {
+                return RespEncoder.encodeError("ERR value is not an integer or out of range");
+            }
+            RedisObject obj = db.getObject(key);
+            if (obj == null) return RespEncoder.encodeInteger(0);
+            obj.setExpireAtMs(System.currentTimeMillis() + seconds * 1000);
+            return RespEncoder.encodeInteger(1);
+        });
+
+        commands.put("TTL", (db, cmd) -> {
+            if (cmd.getArgs().size() != 2) {
+                return RespEncoder.encodeError("ERR wrong number of arguments for 'ttl' command");
+            }
+            String key = new String(cmd.getArgs().get(1));
+            RedisObject obj = db.getObject(key);
+            if (obj == null) return RespEncoder.encodeInteger(-2);
+            long exp = obj.getExpireAtMs();
+            if (exp == -1) return RespEncoder.encodeInteger(-1);
+            long ttl = (exp - System.currentTimeMillis()) / 1000;
+            return RespEncoder.encodeInteger(Math.max(0, ttl));
+        });
+
+        commands.put("TYPE", (db, cmd) -> {
+            if (cmd.getArgs().size() != 2) {
+                return RespEncoder.encodeError("ERR wrong number of arguments for 'type' command");
+            }
+            String key = new String(cmd.getArgs().get(1));
+            RedisObject obj = db.getObject(key);
+            if (obj == null) return RespEncoder.encodeSimpleString("none");
+            String type = switch (obj.getType()) {
+                case STRING -> "string";
+                case LIST   -> "list";
+                case HASH   -> "hash";
+                case SET    -> "set";
+                case ZSET   -> "zset";
+            };
+            return RespEncoder.encodeSimpleString(type);
+        });
+
+        commands.put("KEYS", (db, cmd) -> {
+            java.util.List<String> keys = db.getAllKeys();
+            return RespEncoder.encodeArray(keys);
+        });
+
+        commands.put("DBSIZE", (db, cmd) -> RespEncoder.encodeInteger(db.size()));
+
+        commands.put("FLUSHALL", (db, cmd) -> {
+            db.flushAll();
+            return RespEncoder.encodeSimpleString("OK");
         });
     }
 

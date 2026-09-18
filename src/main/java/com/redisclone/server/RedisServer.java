@@ -30,6 +30,10 @@ public class RedisServer {
             com.redisclone.core.ActiveExpiryWorker expiryWorker = new com.redisclone.core.ActiveExpiryWorker(db);
             expiryWorker.start();
 
+            // HTTP dashboard API (port 8080)
+            com.redisclone.http.HttpApiServer httpApi = new com.redisclone.http.HttpApiServer(db, registry);
+            httpApi.start();
+
             // Create Workers
             List<WorkerEventLoop> workers = new ArrayList<>();
             for (int i = 0; i < NUM_WORKERS; i++) {
