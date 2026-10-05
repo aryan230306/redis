@@ -42,9 +42,9 @@ public class RedisServer {
                 worker.start();
             }
 
-            // Create and bind ServerSocket
+            // Create and bind ServerSocket on 0.0.0.0 so it's reachable
             ServerSocketChannel serverSocket = ServerSocketChannel.open();
-            serverSocket.bind(new InetSocketAddress(PORT));
+            serverSocket.bind(new InetSocketAddress("0.0.0.0", PORT));
             serverSocket.configureBlocking(false);
 
             // Create Boss

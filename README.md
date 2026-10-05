@@ -80,10 +80,32 @@ redis-cli -p 6379 ZRANGE leaderboard 0 -1
 
 ## Deploying to Railway
 
+This project includes a `Dockerfile` — Railway will auto-detect it.
+
 1. Push this repo to GitHub
-2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub
-3. Set the **Start Command** to: `./build_and_run.sh`
-4. Expose port **6379** in the Railway dashboard
+2. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → select `redis`
+3. Railway detects the `Dockerfile` and builds automatically
+4. In the Railway dashboard go to your service → **Settings** → **Networking** → **Generate Domain** to get a public HTTPS URL
+5. Railway automatically sets the `$PORT` environment variable — our server reads it
+
+Your HTTP API will be live at:
+```
+https://your-app.up.railway.app/api/info
+https://your-app.up.railway.app/api/command   (POST)
+https://your-app.up.railway.app/api/keys      (GET)
+https://your-app.up.railway.app/health        (GET)
+```
+
+## Deploying the Dashboard to Vercel
+
+The dashboard is a single static HTML file in `dashboard/index.html`.
+
+```bash
+cd dashboard
+npx -y vercel --yes
+```
+
+After deploy, open the dashboard URL, change the server URL field from `http://localhost:8080` to your Railway HTTPS URL, and click **Connect**.
 
 ## Known Deviations from Real Redis
 

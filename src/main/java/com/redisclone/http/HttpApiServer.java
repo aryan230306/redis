@@ -23,8 +23,7 @@ import java.util.concurrent.Executors;
  *   GET  /api/info      - returns server metadata
  */
 public class HttpApiServer {
-    private static final int HTTP_PORT = 8080;
-
+    private final int httpPort;
     private final RedisDatabase db;
     private final CommandRegistry registry;
     private final HttpServer server;
@@ -32,11 +31,19 @@ public class HttpApiServer {
     public HttpApiServer(RedisDatabase db, CommandRegistry registry) throws IOException {
         this.db = db;
         this.registry = registry;
-        this.server = HttpServer.create(new InetSocketAddress(HTTP_PORT), 0);
+
+        // Railway (and most PaaS) inject $PORT for the HTTP listener.
+        // Fall back to 8080 for local development.
+        String envPort = System.getenv("PORT");
+        this.httpPort = (envPort != null && !envPort.isBlank()) ? Integer.parseInt(envPort.trim()) : 8080;
+
+        // Bind to 0.0.0.0 so Railway's reverse proxy can reach it
+        this.server = HttpServer.create(new InetSocketAddress("0.0.0.0", this.httpPort), 0);
 
         server.createContext("/api/command", this::handleCommand);
         server.createContext("/api/keys",    this::handleKeys);
         server.createContext("/api/info",    this::handleInfo);
+        server.createContext("/health",      this::handleHealth);
         server.createContext("/",            this::handleNotFound);
 
         // A small thread pool so HTTP requests don't block each other
@@ -45,7 +52,7 @@ public class HttpApiServer {
 
     public void start() {
         server.start();
-        System.out.println("HTTP API running on http://localhost:" + HTTP_PORT);
+        System.out.println("HTTP API running on port " + httpPort);
     }
 
     // -------------------------------------------------------------------------
@@ -130,6 +137,11 @@ public class HttpApiServer {
             System.currentTimeMillis()
         );
         sendJson(exchange, 200, json);
+    }
+
+    private void handleHealth(HttpExchange exchange) throws IOException {
+        addCors(exchange);
+        sendJson(exchange, 200, "{\"status\":\"ok\"}");
     }
 
     private void handleNotFound(HttpExchange exchange) throws IOException {
